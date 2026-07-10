@@ -1,0 +1,63 @@
+name: VisionHub
+options:
+  bundleIdPrefix: com.visionhub
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+    tvOS: "17.0"
+packages:
+  VisionHubCore:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+targets:
+  VisionHub-tvOS:
+    type: application
+    platform: tvOS
+    sources:
+      - Apps/VisionHub-tvOS
+      - Apps/VisionHubShared
+    dependencies:
+      - package: VisionHubCore
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.visionhub.tv
+      INFOPLIST_FILE: Config/tvOS-Info.plist
+      CODE_SIGN_ENTITLEMENTS: Config/VisionHub.entitlements
+  VisionHub-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - Apps/VisionHub-iOS
+      - Apps/VisionHubShared
+    dependencies:
+      - package: VisionHubCore
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.visionhub.ios
+      INFOPLIST_FILE: Config/iOS-Info.plist
+      CODE_SIGN_ENTITLEMENTS: Config/VisionHub.entitlements
+  VisionHub-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - Apps/VisionHub-macOS
+      - Apps/VisionHubShared
+    dependencies:
+      - package: VisionHubCore
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.visionhub.mac
+      INFOPLIST_FILE: Config/macOS-Info.plist
+      CODE_SIGN_ENTITLEMENTS: Config/VisionHub.entitlements
+schemes:
+  VisionHub-tvOS:
+    build:
+      targets:
+        VisionHub-tvOS: all
+  VisionHub-iOS:
+    build:
+      targets:
+        VisionHub-iOS: all
+  VisionHub-macOS:
+    build:
+      targets:
+        VisionHub-macOS: all
