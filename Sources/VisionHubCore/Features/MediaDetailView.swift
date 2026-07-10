@@ -6,6 +6,11 @@ public struct MediaDetailView: View {
 
     private let item: MediaItem
     private let currentUserStore: CurrentUserStore
+    @State private var metadataCandidates: [MediaMetadata] = []
+    @State private var isShowingMetadataMatches = false
+    @State private var isShowingAPIKeyEditor = false
+    @State private var isMatchingMetadata = false
+    @State private var metadataMessage: String?
 
     public init(item: MediaItem, currentUserStore: CurrentUserStore) {
         self.item = item
@@ -30,14 +35,19 @@ public struct MediaDetailView: View {
                     NavigationLink {
                         PlaybackView(
                             mediaItem: item,
-                            url: samplePlaybackURL,
+                            url: playbackURL,
                             currentUserStore: currentUserStore
                         )
                     } label: {
                         Label("Play", systemImage: "play.fill")
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(samplePlaybackURL == nil)
+                    .disabled(playbackURL == nil)
+
+                    Button("Match Metadata", systemImage: "sparkles") {
+                        Task { await searchMetadata() }
+                    }
+                    .disabled(isMatchingMetadata)
                 }
             }
 
@@ -45,6 +55,29 @@ public struct MediaDetailView: View {
         }
         .padding(48)
         .navigationTitle(item.title)
+        .sheet(isPresented: $isShowingMetadataMatches) {
+            MetadataMatchView(candidates: metadataCandidates) { metadata in
+                confirm(metadata)
+            }
+        }
+        .sheet(isPresented: $isShowingAPIKeyEditor) {
+            MetadataAPIKeyEditorView { apiKey in
+                do {
+                    try MetadataAPIKeyStore().save(apiKey)
+                    Task { await searchMetadata() }
+                } catch {
+                    metadataMessage = "Unable to save API key: \(error.localizedDescription)"
+                }
+            }
+        }
+        .alert("Metadata", isPresented: Binding(
+            get: { metadataMessage != nil },
+            set: { if !$0 { metadataMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { metadataMessage = nil }
+        } message: {
+            Text(metadataMessage ?? "")
+        }
     }
 
     private var poster: some View {
@@ -70,8 +103,12 @@ public struct MediaDetailView: View {
         }
     }
 
-    private var samplePlaybackURL: URL? {
-        URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8")
+    private var playbackURL: URL? {
+        if let playableURL = item.playableURL {
+            return playableURL
+        }
+        guard item.id.hasPrefix("sample:") else { return nil }
+        return URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8")
     }
 
     private func currentProgress() -> Double {
@@ -85,5 +122,45 @@ public struct MediaDetailView: View {
         )
         let progress = try? modelContext.fetch(descriptor).first
         return min(max((progress?.lastPlayedTime ?? 0) / item.duration, 0), 1)
+    }
+
+    private func searchMetadata() async {
+        isMatchingMetadata = true
+        defer { isMatchingMetadata = false }
+        do {
+            guard let apiKey = try MetadataAPIKeyStore().apiKey(), !apiKey.isEmpty else {
+                isShowingAPIKeyEditor = true
+                return
+            }
+            let service = MetadataMatchingService(
+                context: modelContext,
+                provider: TMDBMetadataProvider(apiKey: apiKey)
+            )
+            if try MetadataCacheStore(context: modelContext).cachedMetadata(mediaId: item.id) != nil {
+                _ = try await service.resolve(item)
+                metadataMessage = "Cached metadata applied."
+                return
+            }
+            metadataCandidates = try await service.candidates(for: item)
+            if metadataCandidates.isEmpty {
+                metadataMessage = "No metadata matches found."
+            } else {
+                isShowingMetadataMatches = true
+            }
+        } catch {
+            metadataMessage = "Metadata search failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func confirm(_ metadata: MediaMetadata) {
+        do {
+            let service = MetadataMatchingService(
+                context: modelContext,
+                provider: TMDBMetadataProvider(apiKey: "cached-selection")
+            )
+            _ = try service.confirm(metadata, for: item)
+        } catch {
+            metadataMessage = "Unable to apply metadata: \(error.localizedDescription)"
+        }
     }
 }

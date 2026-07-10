@@ -35,6 +35,36 @@ public struct MediaSourceCredentials: Codable, Equatable, Sendable {
     }
 }
 
+/// Immutable snapshot used by async providers so SwiftData models never cross
+/// actor or task boundaries.
+public struct MediaServerConfiguration: Codable, Equatable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var host: String
+    public var basePath: String
+    public var protocolType: MediaProtocolType
+    public var username: String
+    public var credentialId: String
+
+    public init(
+        id: UUID,
+        name: String,
+        host: String,
+        basePath: String,
+        protocolType: MediaProtocolType,
+        username: String,
+        credentialId: String
+    ) {
+        self.id = id
+        self.name = name
+        self.host = host
+        self.basePath = basePath
+        self.protocolType = protocolType
+        self.username = username
+        self.credentialId = credentialId
+    }
+}
+
 public struct MediaFile: Identifiable, Codable, Equatable, Sendable {
     public var id: String
     public var serverId: UUID
@@ -70,11 +100,47 @@ public struct MetadataSearchQuery: Codable, Equatable, Sendable {
     public var title: String
     public var year: Int?
     public var kind: MediaKind
+    public var seasonNumber: Int?
+    public var episodeNumber: Int?
 
-    public init(title: String, year: Int? = nil, kind: MediaKind = .movie) {
+    public init(
+        title: String,
+        year: Int? = nil,
+        kind: MediaKind = .movie,
+        seasonNumber: Int? = nil,
+        episodeNumber: Int? = nil
+    ) {
         self.title = title
         self.year = year
         self.kind = kind
+        self.seasonNumber = seasonNumber
+        self.episodeNumber = episodeNumber
+    }
+}
+
+public struct ParsedMediaName: Codable, Equatable, Sendable {
+    public var title: String
+    public var year: Int?
+    public var kind: MediaKind
+    public var seasonNumber: Int?
+    public var episodeNumber: Int?
+
+    public init(title: String, year: Int? = nil, kind: MediaKind, seasonNumber: Int? = nil, episodeNumber: Int? = nil) {
+        self.title = title
+        self.year = year
+        self.kind = kind
+        self.seasonNumber = seasonNumber
+        self.episodeNumber = episodeNumber
+    }
+
+    public var searchQuery: MetadataSearchQuery {
+        MetadataSearchQuery(
+            title: title,
+            year: year,
+            kind: kind,
+            seasonNumber: seasonNumber,
+            episodeNumber: episodeNumber
+        )
     }
 }
 

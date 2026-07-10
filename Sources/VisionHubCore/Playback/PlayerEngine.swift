@@ -5,6 +5,7 @@ import Foundation
 public protocol PlayerEngine: AnyObject {
     var currentTime: Double { get }
     var duration: Double { get }
+    var isPlaying: Bool { get }
     var player: AVPlayer { get }
 
     func load(url: URL)
@@ -24,6 +25,10 @@ public final class AVPlayerEngine: PlayerEngine {
     public var duration: Double {
         let seconds = player.currentItem?.duration.seconds ?? 0
         return seconds.isFinite ? seconds : 0
+    }
+
+    public var isPlaying: Bool {
+        player.timeControlStatus == .playing
     }
 
     public init(player: AVPlayer = AVPlayer()) {

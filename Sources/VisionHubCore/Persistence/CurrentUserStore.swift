@@ -39,4 +39,22 @@ public final class CurrentUserStore {
         currentProfile = nil
         defaults.removeObject(forKey: key)
     }
+
+    public func deleteCurrentProfile(from context: ModelContext) throws {
+        guard let profile = currentProfile else { return }
+        let userId = profile.id
+
+        let progress = try context.fetch(FetchDescriptor<PlaybackProgress>(
+            predicate: #Predicate { $0.userId == userId }
+        ))
+        let playlists = try context.fetch(FetchDescriptor<Playlist>(
+            predicate: #Predicate { $0.userId == userId }
+        ))
+
+        progress.forEach(context.delete)
+        playlists.forEach(context.delete)
+        context.delete(profile)
+        try context.save()
+        clear()
+    }
 }

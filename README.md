@@ -9,6 +9,11 @@ VisionHub is a tvOS-first Apple-platform home media player, designed around a sh
 - `Apps/`: prepared thin platform entry points for future iOS and macOS targets.
 - `project.yml`: retained as an architecture reference; the hand-maintained Xcode project is now authoritative.
 - `docs/architecture.md`: implementation architecture and extension points.
+- `docs/harness-requirements.md`: authoritative module completion dashboard and acceptance checklist.
+
+## Development Rule
+
+Every functional, project configuration, or test change must update `docs/harness-requirements.md` in the same change. Keep module percentages, implementation notes, remaining gaps, and verification records aligned with the code.
 
 ## Verify
 

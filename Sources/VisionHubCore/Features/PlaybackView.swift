@@ -4,6 +4,7 @@ import SwiftUI
 
 public struct PlaybackView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
 
     private let mediaItem: MediaItem
     private let url: URL?
@@ -11,6 +12,7 @@ public struct PlaybackView: View {
 
     @State private var engine = AVPlayerEngine()
     @State private var saveCoordinator = PlaybackSaveCoordinator()
+    @State private var wasPlaying = false
 
     public init(mediaItem: MediaItem, url: URL?, currentUserStore: CurrentUserStore) {
         self.mediaItem = mediaItem
@@ -41,20 +43,28 @@ public struct PlaybackView: View {
             saveProgress(force: true)
             engine.pause()
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                saveProgress(force: true)
+            }
+        }
     }
 
     private func startPlayback() async {
         guard let url else { return }
         engine.load(url: url)
 
+        guard let userId = currentUserStore.currentProfile?.id else { return }
+
         if let progress = try? progressStore().progress(
-            userId: currentUserStore.currentProfile?.id ?? UUID(),
+            userId: userId,
             mediaId: mediaItem.id
         ), !progress.isFinished, progress.lastPlayedTime > 5 {
             await engine.seek(to: progress.lastPlayedTime)
         }
 
         engine.play()
+        wasPlaying = true
     }
 
     private func saveProgress(force: Bool = false) {
@@ -68,6 +78,9 @@ public struct PlaybackView: View {
             duration: max(engine.duration, mediaItem.duration),
             forceFinished: false
         )
+        if force {
+            saveCoordinator.markImmediateSave()
+        }
     }
 
     private func progressStore() -> SwiftDataPlaybackProgressStore {
@@ -77,6 +90,10 @@ public struct PlaybackView: View {
     private func runProgressAutosaveLoop() async {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(1))
+            if wasPlaying && !engine.isPlaying {
+                saveProgress(force: true)
+            }
+            wasPlaying = engine.isPlaying
             saveProgress()
         }
     }

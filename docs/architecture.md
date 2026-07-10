@@ -31,3 +31,7 @@ The shared package can be built and tested immediately with SwiftPM:
 ```sh
 swift test
 ```
+
+## Completion Tracking
+
+`docs/harness-requirements.md` is the authoritative implementation-status document. Every functional, project configuration, or test change must update its module completion percentage, implemented capabilities, remaining gaps, and verification record in the same change.

@@ -3,10 +3,10 @@ import SwiftData
 
 @Model
 public final class UserProfile {
-    public var id: UUID
-    public var name: String
-    public var avatarEmoji: String
-    public var createdAt: Date
+    public var id: UUID = UUID()
+    public var name: String = "New Viewer"
+    public var avatarEmoji: String = "🙂"
+    public var createdAt: Date = Date()
 
     public init(
         id: UUID = UUID(),
@@ -23,15 +23,15 @@ public final class UserProfile {
 
 @Model
 public final class MediaServer {
-    public var id: UUID
-    public var name: String
-    public var host: String
-    public var basePath: String
-    public var protocolRawValue: String
-    public var username: String
-    public var credentialId: String
-    public var createdAt: Date
-    public var updatedAt: Date
+    public var id: UUID = UUID()
+    public var name: String = "Media Server"
+    public var host: String = ""
+    public var basePath: String = "/"
+    public var protocolRawValue: String = MediaProtocolType.webDAV.rawValue
+    public var username: String = ""
+    public var credentialId: String = UUID().uuidString
+    public var createdAt: Date = Date()
+    public var updatedAt: Date = Date()
 
     public var protocolType: MediaProtocolType {
         get { MediaProtocolType(rawValue: protocolRawValue) ?? .webDAV }
@@ -61,20 +61,37 @@ public final class MediaServer {
     }
 }
 
+public extension MediaServer {
+    var configuration: MediaServerConfiguration {
+        MediaServerConfiguration(
+            id: id,
+            name: name,
+            host: host,
+            basePath: basePath,
+            protocolType: protocolType,
+            username: username,
+            credentialId: credentialId
+        )
+    }
+}
+
 @Model
 public final class MediaItem {
-    public var id: String
-    public var serverId: UUID
-    public var path: String
-    public var title: String
-    public var kindRawValue: String
-    public var metadataStatusRawValue: String
+    public var id: String = ""
+    public var serverId: UUID = UUID()
+    public var path: String = ""
+    public var title: String = ""
+    public var kindRawValue: String = MediaKind.unknown.rawValue
+    public var metadataStatusRawValue: String = MetadataStatus.pending.rawValue
     public var metadataCacheId: String?
-    public var duration: Double
+    public var duration: Double = 0
+    public var sizeInBytes: Int64 = 0
+    public var sourceModifiedAt: Date?
+    public var playableURLString: String?
     public var posterURLString: String?
     public var backdropURLString: String?
-    public var createdAt: Date
-    public var updatedAt: Date
+    public var createdAt: Date = Date()
+    public var updatedAt: Date = Date()
 
     public var kind: MediaKind {
         get { MediaKind(rawValue: kindRawValue) ?? .unknown }
@@ -90,6 +107,10 @@ public final class MediaItem {
         posterURLString.flatMap(URL.init(string:))
     }
 
+    public var playableURL: URL? {
+        playableURLString.flatMap(URL.init(string:))
+    }
+
     public init(
         id: String,
         serverId: UUID,
@@ -99,6 +120,9 @@ public final class MediaItem {
         metadataStatus: MetadataStatus = .pending,
         metadataCacheId: String? = nil,
         duration: Double = 0,
+        sizeInBytes: Int64 = 0,
+        sourceModifiedAt: Date? = nil,
+        playableURLString: String? = nil,
         posterURLString: String? = nil,
         backdropURLString: String? = nil,
         createdAt: Date = Date(),
@@ -112,6 +136,9 @@ public final class MediaItem {
         self.metadataStatusRawValue = metadataStatus.rawValue
         self.metadataCacheId = metadataCacheId
         self.duration = duration
+        self.sizeInBytes = sizeInBytes
+        self.sourceModifiedAt = sourceModifiedAt
+        self.playableURLString = playableURLString
         self.posterURLString = posterURLString
         self.backdropURLString = backdropURLString
         self.createdAt = createdAt
@@ -121,13 +148,13 @@ public final class MediaItem {
 
 @Model
 public final class PlaybackProgress {
-    public var id: String
-    public var userId: UUID
-    public var mediaId: String
-    public var lastPlayedTime: Double
-    public var duration: Double
-    public var isFinished: Bool
-    public var updatedAt: Date
+    public var id: String = ""
+    public var userId: UUID = UUID()
+    public var mediaId: String = ""
+    public var lastPlayedTime: Double = 0
+    public var duration: Double = 0
+    public var isFinished: Bool = false
+    public var updatedAt: Date = Date()
 
     public init(
         id: String,
@@ -154,12 +181,12 @@ public final class PlaybackProgress {
 
 @Model
 public final class Playlist {
-    public var id: UUID
-    public var userId: UUID
-    public var title: String
-    public var mediaIds: [String]
-    public var createdAt: Date
-    public var updatedAt: Date
+    public var id: UUID = UUID()
+    public var userId: UUID = UUID()
+    public var title: String = "New Playlist"
+    public var mediaIds: [String] = []
+    public var createdAt: Date = Date()
+    public var updatedAt: Date = Date()
 
     public init(
         id: UUID = UUID(),
@@ -180,16 +207,16 @@ public final class Playlist {
 
 @Model
 public final class MetadataCache {
-    public var id: String
-    public var mediaId: String
-    public var providerName: String
-    public var providerIdentifier: String
-    public var title: String
-    public var overview: String
+    public var id: String = ""
+    public var mediaId: String = ""
+    public var providerName: String = ""
+    public var providerIdentifier: String = ""
+    public var title: String = ""
+    public var overview: String = ""
     public var releaseYear: Int?
     public var posterURLString: String?
     public var backdropURLString: String?
-    public var updatedAt: Date
+    public var updatedAt: Date = Date()
 
     public init(
         id: String,
